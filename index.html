@@ -389,40 +389,30 @@
     </div>
   </div>
 
-  <!-- Slide 7: Open Questions / Next Steps -->
+  <!-- Slide 7: Next Steps -->
   <div class="slide" id="slide-6">
-    <div class="eyebrow">Open Questions &amp; Next Steps</div>
-    <h2>What still needs to be defined</h2>
-    <div class="two-col">
-      <div class="col">
-        <div class="col-card">
-          <h3>Loading States</h3>
-          <ul>
-            <li>Ownership — Brands, SDK, or hybrid?</li>
-            <li>Granularity — per-component vs full-screen</li>
-            <li>UX approach — skeletons, shimmers, minimal loaders</li>
-            <li>Transition: Order placed → Map + Order Status ready</li>
-          </ul>
-        </div>
-      </div>
-      <div class="col">
-        <div class="col-card">
-          <h3>Error States</h3>
-          <ul>
-            <li>First-load errors with no fallback map available</li>
-            <li>Polling error threshold — keep ~2 min or change?</li>
-            <li>Error message placement — toast, overlay, inside component</li>
-            <li>Partial failures — one component fails, the other works</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="content-block" style="margin-top:20px;">
+    <div class="eyebrow">Next Steps</div>
+    <h2>What we're doing about it</h2>
+    <div class="content-block">
       <div class="list-item">
-        <div class="num">→</div>
+        <div class="num">1</div>
         <div class="text">
-          <h4>Action: Map loading &amp; error handling across all Brands</h4>
-          <p>Inventory current behaviour per brand, then define a unified SDK proposal.</p>
+          <h4>Rethink loading &amp; error states <span class="badge yellow">Short term</span></h4>
+          <p>Define a clear, unified approach for how loading and error states are handled in OTP — ownership, granularity, UX patterns, and behaviour across Map and Order Status components.</p>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="num">2</div>
+        <div class="text">
+          <h4>Factor this constraint into upcoming developments <span class="badge yellow">Immediate</span></h4>
+          <p>Teams working on near-term features — such as Order Status Component v1 vertical type variations — must account for the 5–6s first-load window as a known constraint in their design and implementation.</p>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="num">3</div>
+        <div class="text">
+          <h4>Backend discovery: fix the root cause <span class="badge" style="background:#1e1e2e;color:#8080c0;border:1px solid #3a3a6a;">Mid term</span></h4>
+          <p>Add a discovery ticket to the backlog to investigate how to reduce or eliminate the BFF latency at its source. Not a short-term priority, but important to address as the SDK matures.</p>
         </div>
       </div>
     </div>
