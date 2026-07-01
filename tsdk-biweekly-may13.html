@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSDK Bi-weekly · May 13, 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:  #131732;
+    --red:   #d61f26;
+    --blue:  #4629ff;
+    --green: #a2faa3;
+    --green-bg: #ddffde;
+    --grey:  #f5f5f6;
+    --mid-grey: #cdcdd2;
+    --amber: #f0c131;
+    --white: #ffffff;
+  }
+
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: #0e0e14;
+    color: var(--navy);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 28px; background: var(--navy); flex-shrink: 0;
+  }
+  nav .brand { display: flex; align-items: center; gap: 10px; }
+  nav .dh-mark {
+    width: 28px; height: 28px; background: var(--red); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: white; letter-spacing: -0.5px;
+  }
+  nav .brand-name { font-size: 12px; font-weight: 600; color: #8080aa; letter-spacing: 0.08em; text-transform: uppercase; }
+  nav .controls { display: flex; align-items: center; gap: 14px; }
+  nav button {
+    background: transparent; border: 1px solid #2a2a4a; color: #8080aa;
+    padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 12px;
+    transition: all 0.15s;
+  }
+  nav button:hover:not(:disabled) { border-color: var(--red); color: white; }
+  nav button:disabled { opacity: 0.25; cursor: default; }
+  nav .counter { font-size: 12px; color: #4a4a6a; min-width: 48px; text-align: center; }
+
+  .progress-bar { height: 3px; background: #1a1a2e; flex-shrink: 0; }
+  .progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
+
+  .deck { flex: 1; overflow: hidden; position: relative; }
+  .slide {
+    position: absolute; inset: 0; display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .slide-cover {
+    background: var(--navy);
+    align-items: center; justify-content: center; flex-direction: column;
+    overflow: hidden;
+  }
+  .slide-cover::before {
+    content: ''; position: absolute; left: -60px; top: -60px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(214,31,38,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .slide-cover::after {
+    content: ''; position: absolute; right: -40px; bottom: -40px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(70,41,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cover-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--red); margin-bottom: 18px;
+  }
+  .cover-title {
+    font-size: 48px; font-weight: 800; color: white; text-align: center; line-height: 1.1;
+    max-width: 640px;
+  }
+  .cover-subtitle {
+    margin-top: 16px; font-size: 20px; font-weight: 600; color: #8080aa; text-align: center;
+  }
+  .cover-date {
+    margin-top: 32px; font-size: 13px; color: #4a4a6a; letter-spacing: 0.05em;
+  }
+  .cover-line {
+    width: 48px; height: 3px; background: var(--red); border-radius: 2px; margin: 20px auto 0;
+  }
+
+  .slide-content {
+    background: var(--white); flex-direction: column; padding: 0;
+  }
+  .slide-header {
+    background: var(--red); padding: 10px 36px;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .slide-header h2 {
+    font-size: 15px; font-weight: 700; color: white; letter-spacing: 0.01em;
+  }
+  .slide-header .slide-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+  }
+  .slide-body {
+    flex: 1; padding: 28px 36px; overflow: hidden; display: flex; flex-direction: column;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;
+  }
+  .badge.done     { background: var(--green-bg); color: #2d6e40; }
+  .badge.progress { background: #ebe8ff; color: var(--blue); }
+  .badge.planned  { background: #f0f0f0; color: #888; }
+  .badge.blocked  { background: #fde8e8; color: var(--red); }
+  .badge.amber    { background: #fff5d6; color: #8a6000; }
+
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--grey); border-radius: 7px; padding: 11px 14px;
+    font-size: 13px; color: var(--navy); line-height: 1.45;
+  }
+  .feature-list li .fi { flex-shrink: 0; font-size: 15px; }
+  .feature-list li strong { font-weight: 700; }
+
+  .brand-grid { display: flex; flex-direction: column; gap: 8px; }
+  .brand-row {
+    display: flex; align-items: center; gap: 0;
+    background: var(--grey); border-radius: 8px; overflow: hidden;
+  }
+  .brand-name-cell {
+    width: 120px; flex-shrink: 0; padding: 12px 16px;
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    border-right: 1px solid var(--mid-grey);
+  }
+  .brand-status-cell {
+    flex: 1; padding: 10px 16px; font-size: 12px; color: #444; line-height: 1.5;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .brand-status-cell span { flex: 1; }
+
+  .steps { display: flex; gap: 0; margin-bottom: 20px; }
+  .step {
+    flex: 1; text-align: center; position: relative; padding: 0 4px;
+  }
+  .step::after {
+    content: ''; position: absolute; top: 14px; left: 50%; right: -50%;
+    height: 2px; background: var(--mid-grey); z-index: 0;
+  }
+  .step:last-child::after { display: none; }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; position: relative; z-index: 1;
+  }
+  .step-dot.done     { background: var(--green); color: #2d6e40; }
+  .step-dot.active   { background: var(--blue); color: white; }
+  .step-dot.pending  { background: #e0e0e8; color: #aaa; }
+  .step-label { font-size: 10px; font-weight: 600; color: #888; line-height: 1.3; }
+  .step-label.done-label { color: #2d6e40; }
+  .step-label.active-label { color: var(--blue); }
+
+  .two-col { display: flex; gap: 20px; flex: 1; }
+  .col-section { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .col-section h3 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--red); margin-bottom: 4px;
+  }
+
+  .team-rows { display: flex; flex-direction: column; gap: 8px; }
+  .team-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--grey); border-radius: 7px; padding: 11px 14px;
+  }
+  .team-row .t-icon { font-size: 16px; flex-shrink: 0; }
+  .team-row h4 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+  .team-row p { font-size: 12px; color: #555; line-height: 1.45; }
+
+  .risk-card {
+    background: var(--grey); border-radius: 10px; padding: 16px 20px;
+    border-left: 4px solid var(--amber);
+  }
+  .risk-card h4 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .risk-card p { font-size: 12px; color: #555; line-height: 1.5; margin-bottom: 8px; }
+
+  .key-hint { position: fixed; bottom: 14px; right: 20px; font-size: 11px; color: #3a3a5a; font-family: inherit; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<nav>
+  <div class="brand">
+    <div class="dh-mark">DH</div>
+    <div class="brand-name">Tracking SDK · Bi-weekly Review</div>
+  </div>
+  <div class="controls">
+    <button id="prevBtn" onclick="navigate(-1)">← Prev</button>
+    <span class="counter" id="counter">1 / 10</span>
+    <button id="nextBtn" onclick="navigate(1)">Next →</button>
+  </div>
+</nav>
+
+<div class="deck">
+
+  <!-- 0. Cover -->
+  <div class="slide slide-cover active" id="slide-0">
+    <div class="cover-tag">Logistics · Global Order Tracking SDK</div>
+    <div class="cover-title">Bi-weekly Cycle Review</div>
+    <div class="cover-subtitle">Customer Product Line</div>
+    <div class="cover-line"></div>
+    <div class="cover-date">May 13, 2026</div>
+  </div>
+
+  <!-- 1. Agenda -->
+  <div class="slide slide-content" id="slide-1">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">Today's session</div>
+        <h2>Agenda</h2>
+      </div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:600px;width:100%;margin:0 auto;">
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🗞️</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">01</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">TSDK Main Updates</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🤝</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">02</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">TSDK Discussion Points</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🛠️</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">03</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">What we did &amp; What's Next</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Updates (no highlight) -->
+  <div class="slide slide-content" id="slide-2">
+    <div class="slide-header">
+      <div>
+        <h2>🗞️ TSDK Main Updates</h2>
+      </div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:14px;width:100%;">
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:28px;flex-shrink:0;">✅</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">eFood Map v2 Integration Finished</div>
+            <div style="font-size:13px;color:#555;line-height:1.5;">QA on May 13 (today) — eFood becomes the first brand to complete Map v2 integration.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:28px;flex-shrink:0;">🚀</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">PeYa Map v2 Android almost done</div>
+            <div style="font-size:13px;color:#555;line-height:1.5;"><strong>Android</strong> QA on May 26 &nbsp;·&nbsp; <strong>iOS</strong> by end of May &nbsp;·&nbsp; <strong>Experiment</strong> mid June</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:28px;flex-shrink:0;">🔄</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Order Status v1 — RFC &amp; Design Review in Progress</div>
+            <div style="font-size:13px;color:#555;line-height:1.5;">Tech RFC and Brand Design validation running in parallel.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Discussion Points -->
+  <div class="slide slide-content" id="slide-3">
+    <div class="slide-header">
+      <div>
+        <h2>🤝 TSDK Discussion Points</h2>
+      </div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:18px 22px;">
+          <div style="font-size:26px;flex-shrink:0;">📊</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <div style="font-size:15px;font-weight:700;color:var(--navy);">OKRs Update</div>
+              <span style="background:#fff5d6;color:#8a6000;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;">🟡 Yellow</span>
+            </div>
+            <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:8px;">KRs aiming for <strong>~50–70% completion</strong>. Root causes: Brands integration capacity (HS → June, GV → Q3), component injection complexity, and Design alignment gaps with brands.</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#ebe8ff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--blue);">🎯 Visibility + leadership support on 3 asks → next slide</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:18px 22px;">
+          <div style="font-size:26px;flex-shrink:0;">⚡</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">Flutter SDK — Decision Needed</div>
+            <div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:8px;">We need to align on a strategy: <strong>Flutter SDK · Wrapper · Defer · Don't support</strong>.<br>If aligned with Flutter SDK direction → need help to align with Talabat leadership.</div>
+            <div style="display:inline-flex;align-items:center;gap:6px;background:#ebe8ff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--blue);">🎯 Decision + possible Talabat leadership alignment</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. OKRs Deep Dive -->
+  <div class="slide slide-content" id="slide-4">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">Discussion Points · Deep Dive</div>
+        <h2>📊 OKRs — Risks &amp; Asks</h2>
+      </div>
+      <div style="margin-left:auto;"><span class="badge amber">🟡 ~50–70% expected</span></div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+
+        <div class="risk-card">
+          <h4>🏢 Brands Capacity &amp; OKR Alignment</h4>
+          <p>HS deferred to June · GV deferred to Q3 — integration timelines keep slipping even when work was agreed in Q1.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:#fff5d6;color:#8a6000;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Learning: Brands leadership must commit to integration efforts</span>
+            <span style="background:#ebe8ff;color:var(--blue);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Support Needed: How to engage senior Brand leaders in planning?</span>
+          </div>
+        </div>
+
+        <div class="risk-card">
+          <h4>🔧 Component Injection Complexity</h4>
+          <p>Brands must provide &amp; inject their own UI components, consuming both brand and TSDK capacity. SDK is not "out of the box" as expected.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:#fff5d6;color:#8a6000;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Learning: Component injection path is slow.</span>
+            <span style="background:#ebe8ff;color:var(--blue);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Support Needed: How to raise visibility on this risk?</span>
+          </div>
+        </div>
+
+        <div class="risk-card">
+          <h4>🎨 Central &amp; Brands Design Alignment</h4>
+          <p>Brand design validation is a critical stage with no formal hand-off process — risk of endless discussions and opinion loops.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:#fff5d6;color:#8a6000;border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Learning: Need proper design hand-off processes</span>
+            <span style="background:#ebe8ff;color:var(--blue);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;">Support Needed: We might need leadership alignment to agree on Design ownership.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. What we did & What's Next intro -->
+  <div class="slide slide-content" id="slide-5">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">Section 3</div>
+        <h2>🛠️ What we did &amp; What's Next</h2>
+      </div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;width:100%;">
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🗺️</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Map v2</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">📋</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Order Status v1</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🔌</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Brands Integration</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🎯</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Product Updates</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">⚙️</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Tech Updates</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🎨</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Design Updates</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Map v2 (adoption focus) -->
+  <div class="slide slide-content" id="slide-6">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">What we did &amp; What's Next</div>
+        <h2>🗺️ Map v2</h2>
+      </div>
+      <div style="margin-left:auto;"><span class="badge done">✅ Released Apr 28</span></div>
+    </div>
+    <div class="slide-body">
+      <ul class="feature-list" style="margin-bottom:16px;">
+        <li><span class="fi">✅</span><div><strong>Map v2 Finalised &amp; Tested</strong> — Build complete and available to all brands</div></li>
+        <li><span class="fi">🧪</span><div><strong>Usability testing in progress with PedidosYa</strong></div></li>
+      </ul>
+      <div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Brand Adoption Progress</div>
+      <div class="brand-grid">
+        <div class="brand-row">
+          <div class="brand-name-cell">eFood</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ddffde;color:#2d6e40;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">✅ Integration Finished</span>
+              <span style="font-size:11px;color:#888;">QA today — May 13</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">PeYa</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ebe8ff;color:#4629ff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">🔄 +90% finished</span>
+              <span style="font-size:11px;color:#888;">Android QA May 26 · iOS end of May · Experiment mid June</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">GV &amp; HS</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#f0f0f0;color:#666;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">📅 Planned</span>
+              <span style="font-size:11px;color:#888;">GV → Q3 (deferred) · HS → early June</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Order Status v1 -->
+  <div class="slide slide-content" id="slide-7">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">What we did &amp; What's Next</div>
+        <h2>📋 Order Status v1</h2>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="steps">
+        <div class="step">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done-label">Product<br>Review</div>
+        </div>
+        <div class="step">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done-label">Early<br>Designs</div>
+        </div>
+        <div class="step">
+          <div class="step-dot done">✓</div>
+          <div class="step-label done-label">Tech<br>Validation</div>
+        </div>
+        <div class="step">
+          <div class="step-dot active">→</div>
+          <div class="step-label active-label">Usability<br>Testing</div>
+        </div>
+        <div class="step">
+          <div class="step-dot active">→</div>
+          <div class="step-label active-label">Brands<br>Validation</div>
+        </div>
+        <div class="step">
+          <div class="step-dot active">→</div>
+          <div class="step-label active-label">Tech<br>RFC</div>
+        </div>
+        <div class="step">
+          <div class="step-dot pending">○</div>
+          <div class="step-label">Build</div>
+        </div>
+      </div>
+      <ul class="feature-list">
+        <li><span class="fi">✅</span><div><strong>Product Review concluded</strong> — Scope and direction signed off</div></li>
+        <li><span class="fi">✅</span><div><strong>Early designs concluded &amp; Validated with Tech</strong> — Design and engineering aligned</div></li>
+        <li><span class="fi">🔄</span><div><strong>Usability testing in progress with Glovo</strong></div></li>
+        <li><span class="fi">🔄</span><div><strong>Brands validation in progress</strong></div></li>
+        <li><span class="fi">🔄</span><div><strong>Tech RFC in Progress</strong></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 9. Brands Integration -->
+  <div class="slide slide-content" id="slide-8">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">What we did &amp; What's Next</div>
+        <h2>🔌 Brands Integration</h2>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="brand-grid">
+        <div class="brand-row">
+          <div class="brand-name-cell">Glovo</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ddffde;color:#2d6e40;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">✅ Map v1 Rolled Out</span>
+              <span style="background:#ebe8ff;color:#4629ff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">🧪 Iterating</span>
+              <span style="background:#f0f0f0;color:#666;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">📅 Map v2 → Q3 (deferred)</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">HungerStation</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ddffde;color:#2d6e40;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">✅ Map v1 Rolled Out</span>
+              <span style="background:#f0f0f0;color:#666;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">📅 Map v2 — early June</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">PeYa</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ebe8ff;color:#4629ff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">🔄 Map v2 +90% finished</span>
+              <span style="font-size:11px;color:#888;">Android QA May 26 · iOS end of May · Experiment mid June</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">eFood</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#ddffde;color:#2d6e40;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">✅ Map v2 Finished</span>
+              <span style="font-size:11px;color:#888;">QA today — May 13</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Talabat</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#fff5d6;color:#8a6000;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">⚠️ Discussion</span>
+              <span style="font-size:11px;color:#888;">Flutter SDK RFC — strategy decision pending</span>
+            </span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Pandora</div>
+          <div class="brand-status-cell">
+            <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <span style="background:#fde8e8;color:#d61f26;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">🚫 Blocked</span>
+              <span style="font-size:11px;color:#888;">Conversations with Ops team · Revisiting H2 2026</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Product, Tech & Design -->
+  <div class="slide slide-content" id="slide-9">
+    <div class="slide-header">
+      <div>
+        <div class="slide-tag">What we did &amp; What's Next</div>
+        <h2>Product, Tech &amp; Design Updates</h2>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col">
+        <div class="col-section" style="gap:10px;">
+          <h3>🎯 Product</h3>
+          <div class="team-rows">
+            <div class="team-row">
+              <div class="t-icon">📅</div>
+              <div>
+                <h4>Q3 Planning Underway</h4>
+                <p>Adriana → TUI Map Component &nbsp;·&nbsp; Tomás → TUI Order Status &amp; OTX</p>
+              </div>
+            </div>
+          </div>
+          <h3 style="margin-top:14px;">🎨 Design</h3>
+          <div class="team-rows">
+            <div class="team-row">
+              <div class="t-icon">📊</div>
+              <div>
+                <h4>Delightful Experience Index</h4>
+                <p>Retroactively run for Glovo &amp; HungerStation Map v1 experiments</p>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="t-icon">🔄</div>
+              <div>
+                <h4>Ways of Working</h4>
+                <p>Design roundtable &amp; research roundtable starting in May</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-section" style="gap:10px;">
+          <h3>⚙️ Tech</h3>
+          <div class="team-rows">
+            <div class="team-row">
+              <div class="t-icon">🍎</div>
+              <div>
+                <h4>iOS hiring 🤞</h4>
+                <p>1 L3 + 1 L2 offers sent — waiting for candidate acceptance</p>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="t-icon">🎉</div>
+              <div>
+                <h4>Backend hired</h4>
+                <p>L1 Backend accepted the offer</p>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="t-icon">🤖</div>
+              <div>
+                <h4>Android hiring — starting</h4>
+                <p>Kicking off Android hiring process</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div class="key-hint">← → to navigate</div>
+
+<script>
+  const total = 10;
+  let current = 0;
+
+  function navigate(dir) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, current + dir));
+    document.getElementById('slide-' + current).classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === total - 1;
+    document.getElementById('progressFill').style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+
+  navigate(0);
+</script>
+</body>
+</html>

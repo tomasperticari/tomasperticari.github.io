@@ -1,0 +1,7 @@
+# Ignore everything
+*
+
+# Explicitly allow only the presentation files
+!index.html
+!tsdk-biweekly-*.html
+!.gitignore
