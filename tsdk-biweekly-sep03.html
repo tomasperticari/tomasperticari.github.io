@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TSDK Bi-weekly · Sep 3, 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:  #131732;
+    --red:   #d61f26;
+    --blue:  #4629ff;
+    --green: #a2faa3;
+    --green-bg: #ddffde;
+    --grey:  #f5f5f6;
+    --mid-grey: #cdcdd2;
+    --amber: #f0c131;
+    --white: #ffffff;
+  }
+
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: #0e0e14;
+    color: var(--navy);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 28px; background: var(--navy); flex-shrink: 0;
+  }
+  nav .brand { display: flex; align-items: center; gap: 10px; }
+  nav .dh-mark {
+    width: 28px; height: 28px; background: var(--red); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: white; letter-spacing: -0.5px;
+  }
+  nav .brand-name { font-size: 12px; font-weight: 600; color: #8080aa; letter-spacing: 0.08em; text-transform: uppercase; }
+  nav .controls { display: flex; align-items: center; gap: 14px; }
+  nav button {
+    background: transparent; border: 1px solid #2a2a4a; color: #8080aa;
+    padding: 5px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 12px;
+    transition: all 0.15s;
+  }
+  nav button:hover:not(:disabled) { border-color: var(--red); color: white; }
+  nav button:disabled { opacity: 0.25; cursor: default; }
+  nav .counter { font-size: 12px; color: #4a4a6a; min-width: 48px; text-align: center; }
+
+  .progress-bar { height: 3px; background: #1a1a2e; flex-shrink: 0; }
+  .progress-fill { height: 100%; background: var(--red); transition: width 0.3s ease; }
+
+  .deck { flex: 1; overflow: hidden; position: relative; }
+  .slide { position: absolute; inset: 0; display: none; animation: fadeIn 0.2s ease; }
+  .slide.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .slide-cover {
+    background: var(--navy);
+    align-items: center; justify-content: center; flex-direction: column; overflow: hidden;
+  }
+  .slide-cover::before {
+    content: ''; position: absolute; left: -60px; top: -60px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(214,31,38,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .slide-cover::after {
+    content: ''; position: absolute; right: -40px; bottom: -40px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(70,41,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cover-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--red); margin-bottom: 18px; }
+  .cover-title { font-size: 48px; font-weight: 800; color: white; text-align: center; line-height: 1.1; max-width: 640px; }
+  .cover-subtitle { margin-top: 16px; font-size: 20px; font-weight: 600; color: #8080aa; text-align: center; }
+  .cover-date { margin-top: 32px; font-size: 13px; color: #4a4a6a; letter-spacing: 0.05em; }
+  .cover-line { width: 48px; height: 3px; background: var(--red); border-radius: 2px; margin: 20px auto 0; }
+
+  .slide-content { background: var(--white); flex-direction: column; padding: 0; }
+  .slide-header {
+    background: var(--red); padding: 10px 36px;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .slide-header h2 { font-size: 15px; font-weight: 700; color: white; letter-spacing: 0.01em; }
+  .slide-header .slide-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+  .slide-body { flex: 1; padding: 22px 36px; overflow: hidden; display: flex; flex-direction: column; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;
+  }
+  .badge.done     { background: var(--green-bg); color: #2d6e40; }
+  .badge.progress { background: #ebe8ff; color: var(--blue); }
+  .badge.amber    { background: #fff5d6; color: #8a6000; }
+
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--grey); border-radius: 7px; padding: 10px 14px;
+    font-size: 13px; color: var(--navy); line-height: 1.45;
+  }
+  .feature-list li .fi { flex-shrink: 0; font-size: 15px; }
+
+  .brand-grid { display: flex; flex-direction: column; gap: 6px; }
+  .brand-row { display: flex; align-items: stretch; background: var(--grey); border-radius: 8px; overflow: hidden; }
+  .brand-name-cell {
+    width: 116px; flex-shrink: 0; padding: 9px 14px;
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    border-right: 1px solid var(--mid-grey); display: flex; align-items: center;
+  }
+  .brand-status-cell { flex: 1; padding: 7px 13px; font-size: 11px; color: #444; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .two-col { display: flex; gap: 20px; flex: 1; }
+  .col-section { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .col-section h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); margin-bottom: 2px; }
+
+  .team-rows { display: flex; flex-direction: column; gap: 6px; }
+  .team-row { display: flex; gap: 10px; align-items: flex-start; background: var(--grey); border-radius: 7px; padding: 9px 12px; }
+  .team-row .t-icon { font-size: 15px; flex-shrink: 0; }
+  .team-row h4 { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+  .team-row p { font-size: 11px; color: #555; line-height: 1.4; }
+
+  .key-hint { position: fixed; bottom: 14px; right: 20px; font-size: 11px; color: #3a3a5a; font-family: inherit; }
+
+  .pill-blue  { background:#ebe8ff; color:var(--blue);  border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .pill-green { background:#ddffde; color:#2d6e40;      border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .pill-amber { background:#fff5d6; color:#8a6000;      border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .pill-red   { background:#fde8e8; color:var(--red);   border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .pill-grey  { background:#f0f0f0; color:#666;         border-radius:6px; padding:2px 8px; font-size:10px; font-weight:700; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<nav>
+  <div class="brand">
+    <div class="dh-mark">DH</div>
+    <div class="brand-name">Tracking SDK · Bi-weekly Review</div>
+  </div>
+  <div class="controls">
+    <button id="prevBtn" onclick="navigate(-1)">← Prev</button>
+    <span class="counter" id="counter">1 / 9</span>
+    <button id="nextBtn" onclick="navigate(1)">Next →</button>
+  </div>
+</nav>
+
+<div class="deck">
+
+  <!-- 0. Cover -->
+  <div class="slide slide-cover active" id="slide-0">
+    <div class="cover-tag">Logistics · Global Order Tracking SDK</div>
+    <div class="cover-title">Bi-weekly Cycle Review</div>
+    <div class="cover-subtitle">Customer Product Line</div>
+    <div class="cover-line"></div>
+    <div class="cover-date">Sep 3, 2026</div>
+  </div>
+
+  <!-- 1. Agenda -->
+  <div class="slide slide-content" id="slide-1">
+    <div class="slide-header">
+      <div><div class="slide-tag">Today's session</div><h2>Agenda</h2></div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:600px;width:100%;margin:0 auto;">
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🗞️</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">01</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">TSDK Main Updates</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🔎</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">02</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">TSDK Deep Dive Points</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;background:var(--grey);border-radius:10px;padding:20px 24px;">
+          <div style="font-size:36px;flex-shrink:0;">🛠️</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--red);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">03</div>
+            <div style="font-size:18px;font-weight:700;color:var(--navy);">What we did &amp; What's Next</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Main Updates -->
+  <div class="slide slide-content" id="slide-2">
+    <div class="slide-header"><div><h2>🗞️ TSDK Main Updates</h2></div></div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 22px;border-left:4px solid #2d6e40;">
+          <div style="font-size:26px;flex-shrink:0;">✅</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">OSC v1 — End-to-end testing complete (Sep 3)</div>
+            <div style="font-size:12px;color:#555;line-height:1.55;">Minor refinements next sprint (Sep 7). Integration starting: <strong>HS mid-Sep</strong> · <strong>GV Sep 28</strong>. OSC v2 RFC kicks off Sep 7.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 22px;border-left:4px solid #2d6e40;">
+          <div style="font-size:26px;flex-shrink:0;">🐦</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Flutter × Talabat — Map implementation concluded</div>
+            <div style="font-size:12px;color:#555;line-height:1.55;">Internal testing starting <strong>W37</strong>; experiment set for <strong>W38</strong>. Flutter OSC SDK nearing completion — validation &amp; integration finalising in September.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 22px;">
+          <div style="font-size:26px;flex-shrink:0;">🗺️</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">Map — Three experiments advancing</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="font-size:12px;color:#333;display:flex;gap:6px;align-items:baseline;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">→</span><span><strong>SDK owned loading:</strong> Android prod test successful · iOS pending · AB test <strong>mid-September</strong></span></div>
+              <div style="font-size:12px;color:#333;display:flex;gap:6px;align-items:baseline;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">→</span><span><strong>Stacking low transparency (fake route) variant:</strong> iOS QA done · Android pending · entering HS <strong>W37 release</strong></span></div>
+              <div style="font-size:12px;color:#333;display:flex;gap:6px;align-items:baseline;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">→</span><span><strong>eFood:</strong> TSDK rolled out ✅ · DXI evaluation pending · next: low transparency test</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 22px;border-left:4px solid var(--amber);">
+          <div style="font-size:26px;flex-shrink:0;">🎨</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Design transition — mitigation plan in place</div>
+            <div style="font-size:12px;color:#555;line-height:1.55;">Cami available until <strong>Sep 18</strong>. New role opened. Interim coverage: <strong>Srish → OSC scope</strong> · <strong>Rapha → Map scope</strong>.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Deep Dive Points -->
+  <div class="slide slide-content" id="slide-3">
+    <div class="slide-header"><div><h2>🔎 TSDK Deep Dive Points</h2></div></div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 20px;border-left:4px solid var(--red);">
+          <div style="font-size:24px;flex-shrink:0;">🚚</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+              <div style="font-size:14px;font-weight:700;color:var(--navy);">Vendor Delivery Tracking (Pandora) — Strategic path decision needed</div>
+              <span class="pill-red">Decision</span>
+            </div>
+            <div style="font-size:12px;color:#555;line-height:1.55;margin-bottom:6px;">Pandora wants 4 key TR partners with VD tracking by <strong>end of 2027</strong>. Initial impact estimate: <strong>€0.6M–€8.1M/year</strong> in CCR savings. Three options under assessment:</div>
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#333;margin-bottom:6px;">
+              <div style="display:flex;gap:6px;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">(1)</span><span>POS API middleware plugin (inner-sourced via Vendor Growth)</span></div>
+              <div style="display:flex;gap:6px;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">(2)</span><span>Data Streaming</span></div>
+              <div style="display:flex;gap:6px;"><span style="color:var(--blue);font-weight:700;flex-shrink:0;">(3)</span><span>Brand-specific integration (Pandora backend)</span></div>
+            </div>
+            <div style="display:inline-flex;gap:6px;align-items:center;background:#fde8e8;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--red);">🎯 Do we want to centrally own this? Confirm path by mid-Sep → RFC Q4 · Development Q1 '27</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 20px;border-left:4px solid var(--amber);">
+          <div style="font-size:24px;flex-shrink:0;">🟣</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+              <div style="font-size:14px;font-weight:700;color:var(--navy);">Pandora Integration — Q4 scope confirmed (Map only)</div>
+              <span class="pill-amber">Awareness</span>
+            </div>
+            <div style="font-size:12px;color:#555;line-height:1.55;margin-bottom:4px;"><strong>Map integration Q4 2026</strong>. OSC moved to <strong>Q1 2027</strong> due to feature gaps that need to be closed first. Integration kickoff expected in <strong>October</strong> — Pandora to confirm by mid-Sep (after their planning cycle).</div>
+            <div style="display:inline-flex;gap:6px;align-items:center;background:#fff5d6;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#8a6000;">⚠️ OSC will not be live in Pandora until Q1 2027 — note the OKR implication</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;align-items:flex-start;background:var(--grey);border-radius:10px;padding:16px 20px;">
+          <div style="font-size:24px;flex-shrink:0;">📊</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+              <div style="font-size:14px;font-weight:700;color:var(--navy);">Experimentation Framework — Opportunity to improve TSDK impact detection</div>
+              <span class="pill-blue">Awareness</span>
+            </div>
+            <div style="font-size:12px;color:#555;line-height:1.55;margin-bottom:4px;">eFood experiment surfaced a potential gap: current methodology (fixed/sequential) may underdetect significance. Glovo uses <strong>CUPED + sequential hybrid</strong> — higher statistical power and earlier decisions. HS &amp; Talabat also use CUPED.</div>
+            <div style="font-size:12px;color:#555;line-height:1.55;margin-bottom:6px;">Next steps in motion: Analytics &amp; DS (<em>Gayatri + Sudhanshu</em>) to define updated experiment standards; Performance (<em>Harnoor + Shradha</em>) to define process (when to stop, extend, or relaunch).</div>
+            <div style="display:inline-flex;gap:6px;align-items:center;background:#ebe8ff;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--blue);">🎯 Relevant for our OKRs — better methodology = better ability to detect &amp; prove TSDK impact</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Section intro -->
+  <div class="slide slide-content" id="slide-4">
+    <div class="slide-header">
+      <div><div class="slide-tag">Section 3</div><h2>🛠️ What we did &amp; What's Next</h2></div>
+    </div>
+    <div class="slide-body" style="justify-content:center;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;width:100%;">
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🗺️</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Map v2</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">📋</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Order Status v1</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🔌</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Brands Integration</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🎯</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Product Updates</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">⚙️</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Eng Updates</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--grey);border-radius:10px;padding:18px 20px;">
+          <div style="font-size:28px;flex-shrink:0;">🎨</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">Design Updates</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Order Status v1 -->
+  <div class="slide slide-content" id="slide-5">
+    <div class="slide-header">
+      <div><div class="slide-tag">What we did &amp; What's Next</div><h2>📋 Order Status v1</h2></div>
+      <div style="margin-left:auto;"><span class="badge done">✅ Build done · Integration starting</span></div>
+    </div>
+    <div class="slide-body">
+      <ul class="feature-list">
+        <li><span class="fi">🎉</span><div><strong>E2E testing completed Sep 3</strong> — all milestones done. Minor refinements in sprint Sep 7.</div></li>
+        <li><span class="fi">🔄</span><div><strong>HungerStation</strong> — integration starts <strong>Sep 14</strong>. Experiment targeted by end of September.</div></li>
+        <li><span class="fi">🔄</span><div><strong>Glovo</strong> — integration starts <strong>Sep 28</strong>. Experiment in <strong>Q4</strong>.</div></li>
+        <li><span class="fi">🐦</span><div><strong>Talabat (Flutter)</strong> — OSC dev concluded for TB features. Verification &amp; TB-specific features in progress. Integration finalising in September.</div></li>
+        <li><span class="fi">📐</span><div><strong>OSC v2</strong> — RFC kicks off <strong>Sep 7</strong>. PRD already shared.</div></li>
+        <li><span class="fi">📊</span><div><strong>Long-term Holdout</strong> — GV &amp; HS aligned (5% assignment · 6-month duration). <strong>Launching in September</strong>. GV: min SDK version vs max SDK version. HS: native vs SDK experience.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 6. Map v2 -->
+  <div class="slide slide-content" id="slide-6">
+    <div class="slide-header">
+      <div><div class="slide-tag">What we did &amp; What's Next</div><h2>🗺️ Map v2</h2></div>
+      <div style="margin-left:auto;"><span class="badge progress">🧪 Experiments advancing</span></div>
+    </div>
+    <div class="slide-body">
+      <div class="brand-grid">
+        <div class="brand-row">
+          <div class="brand-name-cell">eFood</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ TSDK rolled out</span>
+            <span class="pill-amber">⏳ DXI evaluation pending</span>
+            <span class="pill-grey">📅 Next: low transparency test</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Glovo</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ OD rolled out (stable)</span>
+            <span class="pill-amber">⚠️ VD/PU — unlikely Q3</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">HungerStation</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ OD rolled out</span>
+            <span class="pill-blue">🧪 PU — ongoing (Eppo scorecard)</span>
+            <span class="pill-blue">🧪 Stacking low transparency → W37 release</span>
+            <span class="pill-grey">📅 VD — full scale TBD</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">PeYa</div>
+          <div class="brand-status-cell">
+            <span class="pill-blue">🔄 TSDK Map vs brand maps — finalising Sep 8</span>
+            <span style="font-size:11px;color:#888;">Eppo scorecard</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Talabat</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ Map implementation done</span>
+            <span class="pill-blue">🧪 Internal testing W37 · Experiment W38</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Pandora</div>
+          <div class="brand-status-cell">
+            <span class="pill-grey">📅 Map integration Q4 · Kickoff October</span>
+            <span style="font-size:11px;color:#888;">Confirmation by mid-Sep</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Brands Integration -->
+  <div class="slide slide-content" id="slide-7">
+    <div class="slide-header">
+      <div><div class="slide-tag">What we did &amp; What's Next</div><h2>🔌 Brands Integration &amp; Experiments</h2></div>
+    </div>
+    <div class="slide-body">
+      <div class="brand-grid">
+        <div class="brand-row">
+          <div class="brand-name-cell">Glovo</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ Map v2 OD — rolled out (stable)</span>
+            <span class="pill-amber">⚠️ Map v2 VD/PU — unlikely Q3</span>
+            <span class="pill-blue">🔄 OSC v1 — integration starts Sep 28 · Exp Q4</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">HungerStation</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ Map v2 OD — rolled out</span>
+            <span class="pill-blue">🧪 Map v2 PU — ongoing (Eppo)</span>
+            <span class="pill-blue">🧪 Stacking low transparency → W37 · Exp end Aug</span>
+            <span class="pill-blue">🔄 OSC v1 — starts Sep 14 · Exp end Sep</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">PeYa</div>
+          <div class="brand-status-cell">
+            <span class="pill-blue">🔄 TSDK Map — finalising Sep 8 · Eppo scorecard</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Talabat</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ Flutter Map — implementation done</span>
+            <span class="pill-blue">🧪 Map internal testing W37 · Exp W38</span>
+            <span class="pill-blue">🔄 Flutter OSC — finalising September</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">eFood</div>
+          <div class="brand-status-cell">
+            <span class="pill-green">✅ TSDK Map rolled out</span>
+            <span class="pill-amber">⏳ DXI evaluation pending</span>
+            <span class="pill-grey">📅 SDK owned loading AB test mid-Sep</span>
+          </div>
+        </div>
+        <div class="brand-row">
+          <div class="brand-name-cell">Pandora</div>
+          <div class="brand-status-cell">
+            <span class="pill-grey">📅 Map Q4 · OSC Q1 '27 · Kickoff confirmation mid-Sep</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Product, Eng & Design -->
+  <div class="slide slide-content" id="slide-8">
+    <div class="slide-header">
+      <div><div class="slide-tag">What we did &amp; What's Next</div><h2>Product, Eng &amp; Design Updates</h2></div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col">
+        <div class="col-section" style="gap:7px;">
+          <h3>🎯 Product</h3>
+          <div class="team-rows">
+            <div class="team-row" style="border-left:3px solid var(--blue);">
+              <div class="t-icon">📍</div>
+              <div>
+                <h4>Live Location Sharing — Maze results &amp; final designs done</h4>
+                <p>Aligning with HS next week to confirm Q4 capacity. Mobile implementation started.</p>
+              </div>
+            </div>
+            <div class="team-row" style="border-left:3px solid var(--blue);">
+              <div class="t-icon">📋</div>
+              <div>
+                <h4>OSC v2 RFC — kicks off Sep 7</h4>
+                <p>PRD already shared. BE RFC starts after approval.</p>
+              </div>
+            </div>
+            <div class="team-row" style="border-left:3px solid #2d6e40;">
+              <div class="t-icon">📊</div>
+              <div>
+                <h4>Long-term Holdout — launching September</h4>
+                <p>GV &amp; HS aligned. 5% assignment · 6-month duration. Pre-test analysis in progress.</p>
+              </div>
+            </div>
+          </div>
+          <h3 style="margin-top:8px;">🎨 Design</h3>
+          <div class="team-rows">
+            <div class="team-row">
+              <div class="t-icon">📊</div>
+              <div>
+                <h4>Foodpanda survey — 54k responses (most engaged ever)</h4>
+                <p>Results to be presented on Sep 8.</p>
+              </div>
+            </div>
+            <div class="team-row" style="border-left:3px solid var(--amber);">
+              <div class="t-icon">🎨</div>
+              <div>
+                <h4>Interim coverage confirmed</h4>
+                <p>Srish → OSC (starts after Sep 18). Rapha Zanutto → Map (from Sep 16).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-section" style="gap:7px;">
+          <h3>⚙️ Engineering — VMT</h3>
+          <div class="team-rows">
+            <div class="team-row" style="border-left:3px solid #2d6e40;">
+              <div class="t-icon">👋</div>
+              <div>
+                <h4>New Backend + iOS engineers joining Sep 7</h4>
+                <p>New unified support flow with PeYa kicking off Monday.</p>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="t-icon">📍</div>
+              <div>
+                <h4>LLS mobile implementation started</h4>
+                <p>BE RFC approval pending — starts next sprint.</p>
+              </div>
+            </div>
+          </div>
+          <h3 style="margin-top:8px;">⚙️ Engineering — TLT</h3>
+          <div class="team-rows">
+            <div class="team-row" style="border-left:3px solid #2d6e40;">
+              <div class="t-icon">👋</div>
+              <div>
+                <h4>Andres (new iOS) joining Sep 21</h4>
+              </div>
+            </div>
+            <div class="team-row">
+              <div class="t-icon">🧩</div>
+              <div>
+                <h4>Widgets RFC — kickoff next week</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div class="key-hint">← → to navigate</div>
+
+<script>
+  const total = 9;
+  let current = 0;
+
+  function navigate(dir) {
+    document.getElementById('slide-' + current).classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, current + dir));
+    document.getElementById('slide-' + current).classList.add('active');
+    document.getElementById('counter').textContent = `${current + 1} / ${total}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === total - 1;
+    document.getElementById('progressFill').style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+
+  navigate(0);
+</script>
+</body>
+</html>
